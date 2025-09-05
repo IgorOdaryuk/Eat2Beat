@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct Eat2Beat_MVPApp: App {
+struct Eat2BeatApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
