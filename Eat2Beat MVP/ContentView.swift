@@ -7,8 +7,6 @@
 
 import SwiftUI
 import PhotosUI
-import SwiftUI
-import PhotosUI
 
 struct ContentView: View {
     @StateObject private var state = AppState()
@@ -65,17 +63,21 @@ struct ContentView: View {
     }
 
     private var appearancePicker: some View {
+        // Only Light / Dark
         Picker("Theme", selection: Binding<AppAppearance>(
-            get: { AppAppearance(rawValue: appearanceRaw) ?? .system },
-            set: { appearanceRaw = $0.rawValue }
+            get: {
+                let current = AppAppearance(rawValue: appearanceRaw) ?? .system
+                return current == .system ? .light : current   // show Light if stored as system
+            },
+            set: { appearanceRaw = $0.rawValue }               // write only .light / .dark
         )) {
-            Text("System").tag(AppAppearance.system)
             Text("Light").tag(AppAppearance.light)
             Text("Dark").tag(AppAppearance.dark)
         }
         .pickerStyle(.segmented)
         .padding(.horizontal)
     }
+
 
     private var picker: some View {
         HStack(spacing: 12) {
