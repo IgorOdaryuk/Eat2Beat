@@ -5,9 +5,22 @@
 //  Created by Igor Odaryuk on 05.09.2025.
 //
 
-import Foundation
 import SwiftUI
 import PhotosUI
+
+enum AppAppearance: String, CaseIterable, Identifiable {
+    case system, light, dark
+    var id: String { rawValue }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light:  return .light
+        case .dark:   return .dark
+        }
+    }
+}
+
 
 // MARK: - Models
 struct Activity: Identifiable, Hashable {

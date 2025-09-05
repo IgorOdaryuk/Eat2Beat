@@ -7,16 +7,27 @@
 
 import SwiftUI
 import PhotosUI
+import SwiftUI
+import PhotosUI
 
 struct ContentView: View {
     @StateObject private var state = AppState()
+
+    // Theme storage
+    @AppStorage("appearance") private var appearanceRaw: String = AppAppearance.system.rawValue
+    private var appearance: AppAppearance {
+        get { AppAppearance(rawValue: appearanceRaw) ?? .system }
+        set { appearanceRaw = newValue.rawValue }
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
                     header
+                    appearancePicker
                     picker
+
                     if let ui = state.selectedImage {
                         Image(uiImage: ui)
                             .resizable()
@@ -25,6 +36,7 @@ struct ContentView: View {
                             .shadow(radius: 4)
                             .padding(.horizontal)
                     }
+
                     inputSection
                     results
                 }
@@ -32,16 +44,19 @@ struct ContentView: View {
             }
             .navigationTitle("Eat2Beat")
         }
+        .preferredColorScheme(appearance.colorScheme)
         .onChange(of: state.selectedItem) { _ in
             Task { await state.loadImage() }
         }
     }
 
+    // MARK: - Sections
+
     private var header: some View {
         VStack(spacing: 6) {
-            Text("Сфоткай еду → получи цену в спорте")
+            Text("Snap your food → get the gym price")
                 .font(.headline)
-            Text("Пересчитаем калории в минуты активности. Введи калории вручную или выбери фото.")
+            Text("Convert calories to workout minutes. Enter calories or pick a photo.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -49,10 +64,23 @@ struct ContentView: View {
         }
     }
 
+    private var appearancePicker: some View {
+        Picker("Theme", selection: Binding<AppAppearance>(
+            get: { AppAppearance(rawValue: appearanceRaw) ?? .system },
+            set: { appearanceRaw = $0.rawValue }
+        )) {
+            Text("System").tag(AppAppearance.system)
+            Text("Light").tag(AppAppearance.light)
+            Text("Dark").tag(AppAppearance.dark)
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+    }
+
     private var picker: some View {
         HStack(spacing: 12) {
             PhotosPicker(selection: $state.selectedItem, matching: .images) {
-                Label("Выбрать фото", systemImage: "photo")
+                Label("Choose Photo", systemImage: "photo")
             }
             .buttonStyle(.bordered)
 
@@ -62,7 +90,7 @@ struct ContentView: View {
                 state.caloriesInput = ""
                 state.estimates = []
             } label: {
-                Label("Сброс", systemImage: "arrow.counterclockwise")
+                Label("Reset", systemImage: "arrow.counterclockwise")
             }
             .buttonStyle(.bordered)
         }
@@ -71,11 +99,12 @@ struct ContentView: View {
     private var inputSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             if state.isDetecting {
-                ProgressView("Определяем еду…")
+                ProgressView("Detecting food…")
             }
+
             if !state.detected.isEmpty {
                 HStack {
-                    Text("Похоже на:")
+                    Text("Looks like:")
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack {
                             ForEach(state.detected) { g in
@@ -90,20 +119,22 @@ struct ContentView: View {
                     }
                 }
             }
+
             HStack {
-                Text("Вес, кг")
+                Text("Weight, kg")
                 Slider(value: $state.weightKg, in: 40...130, step: 1) {
-                    Text("Вес")
+                    Text("Weight")
                 }
                 Text("\(Int(state.weightKg))")
                     .frame(width: 36)
             }
+
             HStack {
-                Text("Калории")
-                TextField("например 540", text: $state.caloriesInput)
+                Text("Calories")
+                TextField("e.g. 540", text: $state.caloriesInput)
                     .keyboardType(.numberPad)
                     .textFieldStyle(.roundedBorder)
-                Button("Рассчитать") { state.recalc() }
+                Button("Calculate") { state.recalc() }
                     .buttonStyle(.borderedProminent)
             }
             .padding(.top, 4)
@@ -114,7 +145,7 @@ struct ContentView: View {
     private var results: some View {
         VStack(alignment: .leading, spacing: 8) {
             if state.estimates.isEmpty {
-                Text("Здесь появятся минуты тренировки для сжигания калорий.")
+                Text("Workout minutes will appear here.")
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
             } else {
@@ -122,7 +153,7 @@ struct ContentView: View {
                     HStack {
                         Text(est.activity.name)
                         Spacer()
-                        Text("\(est.minutes) мин")
+                        Text("\(est.minutes) min")
                             .monospacedDigit()
                     }
                     .padding()
@@ -130,7 +161,7 @@ struct ContentView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                     .padding(.horizontal)
                 }
-                Text("Формула: мин = калории / ((MET × 3.5 × вес)/200)")
+                Text("Formula: minutes = calories / ((MET × 3.5 × weight)/200)")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)

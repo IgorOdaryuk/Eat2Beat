@@ -9,9 +9,19 @@ import SwiftUI
 
 @main
 struct Eat2BeatApp: App {
+    @AppStorage("didOnboard") private var didOnboard = false
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Group {
+                if didOnboard {
+                    ContentView()
+                } else {
+                    StartView {
+                        didOnboard = true
+                    }
+                }
+            }
         }
     }
 }
